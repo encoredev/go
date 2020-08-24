@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build ("1.2.3")'
+        required: true
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - builder: ubuntu-latest
+            goos: linux
+            goarch: amd64
+          - builder: macos-latest
+            goos: darwin
+            goarch: amd64
+          - builder: macos-latest
+            goos: darwin
+            goarch: arm64
+          - builder: windows-latest
+            goos: windows
+            goarch: amd64
+    
+    runs-on: ${{ matrix.builder }}
+    steps:
+    - name: Check out repo
+      uses: actions/checkout@v2
+      
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.16
+    - name: Build
+      run: go run ./encore-build.go -v="${{ github.event.inputs.version }}" -dst=dist -goos=${{ matrix.goos }} -goarch=${{ matrix.goarch }}
+      env: 
+        GO111MODULE: "on"
+    - name: 'Tar artifacts'
+      run: tar -czvf encore-go-${{ github.event.inputs.version }}-${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz -C dist/${{ matrix.goos }}_${{ matrix.goarch }} .
+    - name: Publish artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: encore-go-${{ github.event.inputs.version }}-${{ matrix.goos }}_${{ matrix.goarch }}
+        path: encore-go-${{ github.event.inputs.version }}-${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz

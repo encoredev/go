@@ -3376,6 +3376,27 @@ func goexit1() {
 func goexit0(gp *g) {
 	_g_ := getg()
 
+	if e := gp.encore; e != nil {
+		gp.encore = nil
+		if e.req != nil && e.op.trace != nil {
+			spanID := e.req.spanID
+			e.op.trace.log(0x04, []byte{
+				spanID[0],
+				spanID[1],
+				spanID[2],
+				spanID[3],
+				spanID[4],
+				spanID[5],
+				spanID[6],
+				spanID[7],
+				byte(e.goid),
+				byte(e.goid >> 8),
+				byte(e.goid >> 16),
+				byte(e.goid >> 24),
+			})
+		}
+	}
+
 	casgstatus(gp, _Grunning, _Gdead)
 	if isSystemGoroutine(gp, false) {
 		atomic.Xadd(&sched.ngsys, -1)
@@ -4067,6 +4088,30 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
 	gostartcallfn(&newg.sched, fn)
 	newg.gopc = callerpc
 	newg.ancestors = saveAncestors(callergp)
+
+	if e := callergp.encore; e != nil {
+		goid := encoreTagG(newg, e.op, e.req)
+
+		// Log an event if we are tracing this
+		if e.req != nil && e.op.trace != nil {
+			spanID := e.req.spanID
+			e.op.trace.log(0x03, []byte{
+				spanID[0],
+				spanID[1],
+				spanID[2],
+				spanID[3],
+				spanID[4],
+				spanID[5],
+				spanID[6],
+				spanID[7],
+				byte(goid),
+				byte(goid >> 8),
+				byte(goid >> 16),
+				byte(goid >> 24),
+			})
+		}
+	}
+
 	newg.startpc = fn.fn
 	if _g_.m.curg != nil {
 		newg.labels = _g_.m.curg.labels

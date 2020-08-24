@@ -15,12 +15,14 @@ import (
 	"go/parser"
 	"go/token"
 	"internal/lazytemplate"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
+	"cmd/go/internal/fsys"
 	"cmd/go/internal/str"
 	"cmd/go/internal/trace"
 )
@@ -576,7 +578,17 @@ type testFunc struct {
 var testFileSet = token.NewFileSet()
 
 func (t *testFuncs) load(filename, pkg string, doImport, seen *bool) error {
-	f, err := parser.ParseFile(testFileSet, filename, nil, parser.ParseComments)
+	// Pass in the overlaid source if we have an overlay for this file.
+	var src interface{}
+	if path, ok := fsys.OverlayPath(filename); ok {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		src = data
+	}
+
+	f, err := parser.ParseFile(testFileSet, filename, src, parser.ParseComments)
 	if err != nil {
 		return err
 	}
