@@ -1,0 +1,23 @@
+diff --git a/src/cmd/dist/build.go b/src/cmd/dist/build.go
+index d37c3f83ef..ea7f17eaa8 100644
+--- a/src/cmd/dist/build.go
++++ b/src/cmd/dist/build.go
+@@ -341,6 +341,9 @@ func branchtag(branch string) (tag string, precise bool) {
+ 		}
+ 		break
+ 	}
++
++	tag = "encore-" + tag
++
+ 	return
+ }
+
+@@ -422,7 +425,7 @@ func findgoversion() string {
+ 		if m == nil {
+ 			fatalf("internal/goversion/goversion.go does not contain 'const Version = ...'")
+ 		}
+-		tag += fmt.Sprintf(" go1.%s-", m[1])
++		tag += fmt.Sprintf(" encore-go1.%s-", m[1])
+
+ 		tag += chomp(run(goroot, CheckExit, "git", "log", "-n", "1", "--format=format:%h %cd", "HEAD"))
+ 	}

@@ -1,0 +1,32 @@
+diff --git a/src/net/http/transport.go b/src/net/http/transport.go
+index 0aa48273dd..bf53cad76c 100644
+--- a/src/net/http/transport.go
++++ b/src/net/http/transport.go
+@@ -499,9 +499,17 @@ func (t *Transport) alternateRoundTripper(req *Request) RoundTripper {
+ }
+
+ // roundTrip implements a RoundTripper over HTTP.
+-func (t *Transport) roundTrip(req *Request) (*Response, error) {
++func (t *Transport) roundTrip(req *Request) (rr *Response, err error) {
+ 	t.nextProtoOnce.Do(t.onceSetNextProtoDefaults)
+-	ctx := req.Context()
++	ctx, err := encoreBeginRoundTrip(req)
++	if err != nil {
++		req.closeBody()
++		return nil, err
++	}
++	req.ctx = ctx
++	defer func() {
++		encoreFinishRoundTrip(req, rr, err)
++	}()
+ 	trace := httptrace.ContextClientTrace(ctx)
+
+ 	if req.URL == nil {
+@@ -512,6 +520,7 @@ func (t *Transport) roundTrip(req *Request) (*Response, error) {
+ 		req.closeBody()
+ 		return nil, errors.New("http: nil Request.Header")
+ 	}
++
+ 	scheme := req.URL.Scheme
+ 	isHTTP := scheme == "http" || scheme == "https"
+ 	if isHTTP {
