@@ -1,3 +1,9 @@
+Encore Runtime Patch
+=======================
+
+This patch modifies the Go runtime to add Encore specific tracking data to the Go Routines `g` struct and Trace the
+the and finish of a Go Routine executed due to a request made to your Encore app.
+
 diff --git a/src/runtime/proc.go b/src/runtime/proc.go
 index 73a789c189..846b9d88fb 100644
 --- a/src/runtime/proc.go

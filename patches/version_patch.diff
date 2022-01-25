@@ -1,3 +1,14 @@
+Encore Version Patch
+=======================
+
+This patch modifies the Go build tools (those which build Go itself) to add a "encore" prefix to the version tag, this
+allows us to identify if the Go runtime being used is an Encore patched runtime or it is a standard Go runtime.
+
+It changes the output of `go version` from:
+    `go version go1.17.6 darwin/arm64`
+to:
+    `go version encore-go1.17.6 darwin/arm64`
+
 diff --git a/src/cmd/dist/build.go b/src/cmd/dist/build.go
 index d37c3f83ef..ea7f17eaa8 100644
 --- a/src/cmd/dist/build.go

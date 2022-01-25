@@ -1,3 +1,10 @@
+Encore Networking Patch
+=======================
+
+This patch modifies the standard libraries roundTrip function on the HTTP interface, such that Encore's
+`encoreBeginRoundTrip` and `encoreFinishRoundTrip` are called. These calls are routed into Encore runtime and allows us
+instrument the call.
+
 diff --git a/src/net/http/transport.go b/src/net/http/transport.go
 index 0aa48273dd..bf53cad76c 100644
 --- a/src/net/http/transport.go
@@ -22,11 +29,3 @@ index 0aa48273dd..bf53cad76c 100644
  	trace := httptrace.ContextClientTrace(ctx)
 
  	if req.URL == nil {
-@@ -512,6 +520,7 @@ func (t *Transport) roundTrip(req *Request) (*Response, error) {
- 		req.closeBody()
- 		return nil, errors.New("http: nil Request.Header")
- 	}
-+
- 	scheme := req.URL.Scheme
- 	isHTTP := scheme == "http" || scheme == "https"
- 	if isHTTP {
