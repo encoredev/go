@@ -6,46 +6,103 @@ on:
       version:
         description: 'Go version to build ("1.17")'
         required: true
+      prerelease:
+        description: 'Is this a pre-release?'
+        required: true
+        default: 'false'
 
 jobs:
   build:
     strategy:
       matrix:
         include:
-          - builder: ubuntu-latest
-            goos: linux
-            goarch: amd64
-          - builder: macos-latest
-            goos: darwin
-            goarch: amd64
           - builder: macos-latest
             goos: darwin
             goarch: arm64
+          - builder: macos-latest
+            goos: darwin
+            goarch: amd64
+          - builder: ubuntu-latest
+            goos: linux
+            goarch: amd64
           - builder: windows-latest
             goos: windows
             goarch: amd64
 
     runs-on: ${{ matrix.builder }}
+    outputs:
+      built_version: ${{ steps.encore_go_version.outputs.version }}
     steps:
       - name: Check out repo
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0   # We need the full history for the Go submodule
+          submodules: true # Checkout the Go submodule
 
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
           go-version: 1.17
+
       - name: 'Create patched runtime'
         run: bash ./apply_patch.bash "${{ github.event.inputs.version }}"
-        env:
-          GO111MODULE: "on"
+
       - name: Build
         run: go run . -dst=dist -goos=${{ matrix.goos }} -goarch=${{ matrix.goarch }}
         env:
           GO111MODULE: "on"
+
+      # This step gets the exact version of Go we're releasing (including minor), so if we give the input as `1.17` this might return `encore-go1.17.5`.
+      - name: 'Read the version of Go we built'
+        id: encore_go_version
+        run: echo "::set-output name=version::$(go run . --read-built-version)"
+
       - name: 'Tar artifacts'
-        run: tar -czvf encore-go-${{ github.event.inputs.version }}-${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz -C dist/${{ matrix.goos }}_${{ matrix.goarch }} .
-      - name: Publish artifact
+        run: tar -czvf ${{ steps.encore_go_version.outputs.version }}-${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz -C dist/${{ matrix.goos }}_${{ matrix.goarch }} .
+
+      - name: 'Upload build artifact'
         uses: actions/upload-artifact@v2
         with:
-          name: encore-go-${{ github.event.inputs.version }}-${{ matrix.goos }}_${{ matrix.goarch }}
-          path: encore-go-${{ github.event.inputs.version }}-${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
+          name: ${{ steps.encore_go_version.outputs.version }}-${{ matrix.goos }}_${{ matrix.goarch }}
+          path: ${{ steps.encore_go_version.outputs.version }}-${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: 'Download artifacts from build steps'
+        uses: actions/download-artifact@v2
+
+      - name: 'Convert windows artifact to zip'
+        run: |
+          cd ${{needs.build.outputs.built_version}}-windows_amd64
+          tar -xzf ${{needs.build.outputs.built_version}}-windows_amd64.tar.gz
+          zip -r ${{needs.build.outputs.built_version}}-windows_amd64.zip encore-go
+
+      - name: 'Move, rename and create checksums for the artifacts'
+        run: |
+          mkdir output
+          mv ${{needs.build.outputs.built_version}}-linux_amd64/${{needs.build.outputs.built_version}}-linux_amd64.tar.gz output/Linux_x86-64.tar.gz
+          mv ${{needs.build.outputs.built_version}}-darwin_amd64/${{needs.build.outputs.built_version}}-darwin_amd64.tar.gz output/macOS_x86-64.tar.gz
+          mv ${{needs.build.outputs.built_version}}-darwin_arm64/${{needs.build.outputs.built_version}}-darwin_arm64.tar.gz output/macOS_arm64.tar.gz
+          mv ${{needs.build.outputs.built_version}}-windows_amd64/${{needs.build.outputs.built_version}}-windows_amd64.tar.gz output/Windows_x86-64.tar.gz
+          mv ${{needs.build.outputs.built_version}}-windows_amd64/${{needs.build.outputs.built_version}}-windows_amd64.zip output/Windows_x86-64.zip
+          cd output
+          sha256sum * > checksums.txt
+          ls -R .
+          mv * ../
+          cd ..
+          cat checksums.txt
+
+      - name: 'Publish release'
+        uses: DomBlack/github-release@2.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ needs.build.outputs.built_version }}
+          name: ${{ needs.build.outputs.built_version }}
+          body: >
+            This release is the compiled version of ${{ needs.build.outputs.built_version }}
+          draft: false
+          allow_override: true
+          prerelease: ${{ github.event.inputs.prerelease }}
+          gzip: false
+          files: Linux_x86-64.tar.gz Windows_x86-64.tar.gz Windows_x86-64.zip macOS_arm64.tar.gz macOS_x86-64.tar.gz checksums.txt

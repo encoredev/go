@@ -35,7 +35,7 @@ pushd "$(dirname -- "$0")/go" > /dev/null
 
 # Checkout an updated clean copy of the Go runtime from the $RELEASE_BRANCH
 echo "♻️  Checking out a clean copy of the Go runtime from $RELEASE_BRANCH..."
-  _ git fetch
+  _ git fetch origin "$RELEASE_BRANCH"
 
   _ git checkout -f "$RELEASE_BRANCH"         # Checkout the branch to track it
   _ git reset --hard origin/"$RELEASE_BRANCH" # Reset against the current head of that branch (ignoring any local commits)
