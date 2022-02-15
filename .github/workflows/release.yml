@@ -81,11 +81,11 @@ jobs:
       - name: 'Move, rename and create checksums for the artifacts'
         run: |
           mkdir output
-          mv ${{needs.build.outputs.built_version}}-linux_amd64/${{needs.build.outputs.built_version}}-linux_amd64.tar.gz output/Linux_x86-64.tar.gz
-          mv ${{needs.build.outputs.built_version}}-darwin_amd64/${{needs.build.outputs.built_version}}-darwin_amd64.tar.gz output/macOS_x86-64.tar.gz
-          mv ${{needs.build.outputs.built_version}}-darwin_arm64/${{needs.build.outputs.built_version}}-darwin_arm64.tar.gz output/macOS_arm64.tar.gz
-          mv ${{needs.build.outputs.built_version}}-windows_amd64/${{needs.build.outputs.built_version}}-windows_amd64.tar.gz output/Windows_x86-64.tar.gz
-          mv ${{needs.build.outputs.built_version}}-windows_amd64/${{needs.build.outputs.built_version}}-windows_amd64.zip output/Windows_x86-64.zip
+          mv ${{needs.build.outputs.built_version}}-linux_amd64/${{needs.build.outputs.built_version}}-linux_amd64.tar.gz output/linux_x86-64.tar.gz
+          mv ${{needs.build.outputs.built_version}}-darwin_amd64/${{needs.build.outputs.built_version}}-darwin_amd64.tar.gz output/macos_x86-64.tar.gz
+          mv ${{needs.build.outputs.built_version}}-darwin_arm64/${{needs.build.outputs.built_version}}-darwin_arm64.tar.gz output/macos_arm64.tar.gz
+          mv ${{needs.build.outputs.built_version}}-windows_amd64/${{needs.build.outputs.built_version}}-windows_amd64.tar.gz output/windows_x86-64.tar.gz
+          mv ${{needs.build.outputs.built_version}}-windows_amd64/${{needs.build.outputs.built_version}}-windows_amd64.zip output/windows_x86-64.zip
           cd output
           sha256sum * > checksums.txt
           ls -R .
@@ -105,4 +105,4 @@ jobs:
           allow_override: true
           prerelease: ${{ github.event.inputs.prerelease }}
           gzip: false
-          files: Linux_x86-64.tar.gz Windows_x86-64.tar.gz Windows_x86-64.zip macOS_arm64.tar.gz macOS_x86-64.tar.gz checksums.txt
+          files: linux_x86-64.tar.gz windows_x86-64.tar.gz windows_x86-64.zip macos_arm64.tar.gz macos_x86-64.tar.gz checksums.txt
