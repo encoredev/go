@@ -1,0 +1,33 @@
+Code Coverage Patch
+====================
+
+Go's code coverage is based on generating a manifest of all the files that are built.
+Since Encore's code generation adds some extra files, this doesn't quite work.
+This patch fixes this by skipping over these files, and reading the source file
+using the overlay file system instead of directly from disk.
+
+diff --git a/src/cmd/go/internal/test/test.go b/src/cmd/go/internal/test/test.go
+index 59ea1ef544..d603a29939 100644
+--- a/src/cmd/go/internal/test/test.go
++++ b/src/cmd/go/internal/test/test.go
+@@ -1056,7 +1056,7 @@ func declareCoverVars(p *load.Package, files ...string) map[string]*load.CoverVa
+ 	sum := sha256.Sum256([]byte(p.ImportPath))
+ 	h := fmt.Sprintf("%x", sum[:6])
+ 	for _, file := range files {
+-		if isTestFile(file) {
++		if isTestFile(file) || strings.Contains(file, "encore_internal__") {
+ 			continue
+ 		}
+ 		// For a package that is "local" (imported via ./ import or command line, outside GOPATH),
+diff --git a/src/cmd/go/internal/work/exec.go b/src/cmd/go/internal/work/exec.go
+index 5a225fb9f1..aed7983257 100644
+--- a/src/cmd/go/internal/work/exec.go
++++ b/src/cmd/go/internal/work/exec.go
+@@ -626,6 +626,7 @@ OverlayLoop:
+ 				// Not covering this file.
+ 				continue
+ 			}
++			sourceFile, _ = fsys.OverlayPath(sourceFile)
+ 			if err := b.cover(a, coverFile, sourceFile, cover.Var); err != nil {
+ 				return err
+ 			}
