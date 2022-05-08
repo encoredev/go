@@ -25,6 +25,9 @@ jobs:
           - builder: ubuntu-latest
             goos: linux
             goarch: amd64
+          - builder: ubuntu-latest
+            goos: linux
+            goarch: arm64
           - builder: windows-latest
             goos: windows
             goarch: amd64
@@ -82,6 +85,7 @@ jobs:
         run: |
           mkdir output
           mv ${{needs.build.outputs.built_version}}-linux_amd64/${{needs.build.outputs.built_version}}-linux_amd64.tar.gz output/linux_x86-64.tar.gz
+          mv ${{needs.build.outputs.built_version}}-linux_arm64/${{needs.build.outputs.built_version}}-linux_arm64.tar.gz output/linux_arm64.tar.gz
           mv ${{needs.build.outputs.built_version}}-darwin_amd64/${{needs.build.outputs.built_version}}-darwin_amd64.tar.gz output/macos_x86-64.tar.gz
           mv ${{needs.build.outputs.built_version}}-darwin_arm64/${{needs.build.outputs.built_version}}-darwin_arm64.tar.gz output/macos_arm64.tar.gz
           mv ${{needs.build.outputs.built_version}}-windows_amd64/${{needs.build.outputs.built_version}}-windows_amd64.tar.gz output/windows_x86-64.tar.gz
@@ -105,4 +109,4 @@ jobs:
           allow_override: true
           prerelease: ${{ github.event.inputs.prerelease }}
           gzip: false
-          files: linux_x86-64.tar.gz windows_x86-64.tar.gz windows_x86-64.zip macos_arm64.tar.gz macos_x86-64.tar.gz checksums.txt
+          files: linux_x86-64.tar.gz linux_arm64.tar.gz windows_x86-64.tar.gz windows_x86-64.zip macos_arm64.tar.gz macos_x86-64.tar.gz checksums.txt
