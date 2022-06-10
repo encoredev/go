@@ -1,11 +1,8 @@
-<div align="center">
   <a href="https://encore.dev" alt="encore"><img width="189px" src="https://encore.dev/assets/img/logo.svg"></a>
-  <h3><a href="https://encore.dev">Encore – The Backend Development Engine</a></h3>
-</div>
 
 # Encore Rolling Go Fork
 
-This is [Encore's](https://encore.dev) rolling fork of Go with added automatic instrumentation for local development.
+This is [Encore's](https://github.com/encoredev/encore) rolling fork of Go with added automatic instrumentation.
 
 This branch contains the raw patches, which allow us to re-apply them ontop of new Go releases.
 
