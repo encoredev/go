@@ -13,13 +13,13 @@ index df4dfe4490..10052e09b6 100644
  		t.chatty.Updatef(t.name, "=== PAUSE %s\n", t.name)
  	}
 
-+	encoreTestPaused(t)
++	encorePauseTest(t)
 +
  	t.signal <- true   // Release calling test.
  	<-t.parent.barrier // Wait for the parent test to complete.
  	t.context.waitParallel()
 
-+	encoreTestResumed(t)
++	encoreResumeTest(t)
 +
  	if t.chatty != nil {
  		t.chatty.Updatef(t.name, "=== CONT  %s\n", t.name)
@@ -28,14 +28,14 @@ index df4dfe4490..10052e09b6 100644
 
  func tRunner(t *T, fn func(t *T)) {
  	t.runner = callerName(0)
-+	encoreTestStart(t)
++	encoreStartTest(t)
 
  	// When this goroutine is done, either because fn(t)
  	// returned normally or because a test failure triggered
  	// a call to runtime.Goexit, record the duration and send
  	// a signal saying that the test is done.
  	defer func() {
-+		encoreTestEnd(t)
++		encoreEndTest(t)
  		if t.Failed() {
  			atomic.AddUint32(&numFailed, 1)
  		}
