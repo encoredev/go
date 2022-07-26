@@ -5,78 +5,43 @@ This patch modifies the Go runtime to add Encore specific tracking data to the G
 the and finish of a Go Routine executed due to a request made to your Encore app.
 
 diff --git a/src/runtime/proc.go b/src/runtime/proc.go
-index 73a789c189..846b9d88fb 100644
+index b997a467ba..c96f6c8476 100644
 --- a/src/runtime/proc.go
 +++ b/src/runtime/proc.go
-@@ -3376,6 +3376,27 @@ func goexit1() {
- func goexit0(gp *g) {
+@@ -3454,6 +3454,11 @@ func goexit0(gp *g) {
  	_g_ := getg()
-
+ 	_p_ := _g_.m.p.ptr()
+ 
 +	if e := gp.encore; e != nil {
++		exitEncoreG(e)
 +		gp.encore = nil
-+		if e.req != nil && e.op.trace != nil {
-+			spanID := e.req.spanID
-+			e.op.trace.log(0x04, []byte{
-+				spanID[0],
-+				spanID[1],
-+				spanID[2],
-+				spanID[3],
-+				spanID[4],
-+				spanID[5],
-+				spanID[6],
-+				spanID[7],
-+				byte(e.goid),
-+				byte(e.goid >> 8),
-+				byte(e.goid >> 16),
-+				byte(e.goid >> 24),
-+			})
-+		}
 +	}
 +
  	casgstatus(gp, _Grunning, _Gdead)
+ 	gcController.addScannableStack(_p_, -int64(gp.stack.hi-gp.stack.lo))
  	if isSystemGoroutine(gp, false) {
- 		atomic.Xadd(&sched.ngsys, -1)
-@@ -4067,6 +4088,30 @@ func newproc1(fn *funcval, argp unsafe.Pointer, narg int32, callergp *g, callerp
+@@ -4110,6 +4115,11 @@ func newproc1(fn *funcval, callergp *g, callerpc uintptr) *g {
  	gostartcallfn(&newg.sched, fn)
  	newg.gopc = callerpc
  	newg.ancestors = saveAncestors(callergp)
 +
 +	if e := callergp.encore; e != nil {
-+		goid := encoreTagG(newg, e.op, e.req)
-+
-+		// Log an event if we are tracing this
-+		if e.req != nil && e.op.trace != nil {
-+			spanID := e.req.spanID
-+			e.op.trace.log(0x03, []byte{
-+				spanID[0],
-+				spanID[1],
-+				spanID[2],
-+				spanID[3],
-+				spanID[4],
-+				spanID[5],
-+				spanID[6],
-+				spanID[7],
-+				byte(goid),
-+				byte(goid >> 8),
-+				byte(goid >> 16),
-+				byte(goid >> 24),
-+			})
-+		}
++		newg.encore = startEncoreG(e)
 +	}
 +
  	newg.startpc = fn.fn
- 	if _g_.m.curg != nil {
- 		newg.labels = _g_.m.curg.labels
+ 	if isSystemGoroutine(newg, false) {
+ 		atomic.Xadd(&sched.ngsys, +1)
 diff --git a/src/runtime/runtime2.go b/src/runtime/runtime2.go
-index 109f0da131..d7e0158bfc 100644
+index b40045e4a5..5b3763b6f1 100644
 --- a/src/runtime/runtime2.go
 +++ b/src/runtime/runtime2.go
-@@ -471,6 +471,8 @@ type g struct {
+@@ -487,6 +487,8 @@ type g struct {
  	timer          *timer         // cached timer for time.Sleep
  	selectDone     uint32         // are we participating in a select and did someone win the race?
-
-+	encore *encoreG // encore-specific goroutine data
+ 
++	encore unsafe.Pointer // encore-specific goroutine data
 +
  	// Per-G GC state
-
+ 
  	// gcAssistBytes is this G's GC assist credit in terms of
