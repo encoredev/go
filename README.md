@@ -25,3 +25,16 @@ This branch is broken up into three main folders;
 - `overlay`; this folder contains brand-new Encore specific files which should be copied into the `src` path of a fresh Go Release
 - `patches`; this folder contains patch files to modify the existing Go source code
 - `go`; a submodule checkout of https://go.googlesource.com/go which we apply the above two folders against 
+
+## Creating Patches
+
+If patches do not apply due conflicts, or you need to make other changes to the Go runtime, apply the patches to get a
+base build, fix any conflicts or make your changes. Then from within the `go` folder, for each file run this command to
+copy the exact patch.
+
+```
+git diff --cached src/runtime/runtime2.go | pbcopy
+```
+
+Then create a new or update an existing `.diff` file in the patches folder. Once you've updated all the patches, re-run
+the `./apply_patches.bash` script again to check your changes work. 

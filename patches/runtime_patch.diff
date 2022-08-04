@@ -5,10 +5,10 @@ This patch modifies the Go runtime to add Encore specific tracking data to the G
 the and finish of a Go Routine executed due to a request made to your Encore app.
 
 diff --git a/src/runtime/proc.go b/src/runtime/proc.go
-index b997a467ba..c96f6c8476 100644
+index 3991a48b10..34daedcae0 100644
 --- a/src/runtime/proc.go
 +++ b/src/runtime/proc.go
-@@ -3454,6 +3454,11 @@ func goexit0(gp *g) {
+@@ -3473,6 +3473,11 @@ func goexit0(gp *g) {
  	_g_ := getg()
  	_p_ := _g_.m.p.ptr()
  
@@ -20,7 +20,7 @@ index b997a467ba..c96f6c8476 100644
  	casgstatus(gp, _Grunning, _Gdead)
  	gcController.addScannableStack(_p_, -int64(gp.stack.hi-gp.stack.lo))
  	if isSystemGoroutine(gp, false) {
-@@ -4110,6 +4115,11 @@ func newproc1(fn *funcval, callergp *g, callerpc uintptr) *g {
+@@ -4143,6 +4148,11 @@ func newproc1(fn *funcval, callergp *g, callerpc uintptr) *g {
  	gostartcallfn(&newg.sched, fn)
  	newg.gopc = callerpc
  	newg.ancestors = saveAncestors(callergp)
@@ -32,16 +32,16 @@ index b997a467ba..c96f6c8476 100644
  	newg.startpc = fn.fn
  	if isSystemGoroutine(newg, false) {
  		atomic.Xadd(&sched.ngsys, +1)
+
 diff --git a/src/runtime/runtime2.go b/src/runtime/runtime2.go
-index b40045e4a5..5b3763b6f1 100644
+index e1788223e7..93abd66585 100644
 --- a/src/runtime/runtime2.go
 +++ b/src/runtime/runtime2.go
-@@ -487,6 +487,8 @@ type g struct {
+@@ -488,6 +488,7 @@ type g struct {
+ 	labels         unsafe.Pointer // profiler labels
  	timer          *timer         // cached timer for time.Sleep
  	selectDone     uint32         // are we participating in a select and did someone win the race?
++	encore         unsafe.Pointer // encore-specific goroutine data
  
-+	encore unsafe.Pointer // encore-specific goroutine data
-+
- 	// Per-G GC state
- 
- 	// gcAssistBytes is this G's GC assist credit in terms of
+ 	// goroutineProfiled indicates the status of this goroutine's stack for the
+ 	// current in-progress goroutine profile
