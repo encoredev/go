@@ -45,11 +45,7 @@ LAST_COMMIT_TIME=$(git log -1 --format=%cd)
 
 # Copy our overlay in and then apply the patches
 echo "🏗️  Applying Encore changes to the Go runtime..."
-  if [ -f ./VERSION ]; then
-    rm ./VERSION
-  fi
-
-  _ git apply --3way ../patches/*.diff
+  _ git apply --ignore-space-change --ignore-whitespace --3way ../patches/*.diff
   _ cp -p -P -v -R ../overlay/* ./
 echo
 
