@@ -6,12 +6,12 @@ test runs against global state. This patch introduces a per test level callback 
 test and not have state between tests interfere with each other.
 
 diff --git a/src/testing/testing.go b/src/testing/testing.go
-index df4dfe4490..10052e09b6 100644
+index fc34cbf28b..37f54b482b 100644
 --- a/src/testing/testing.go
 +++ b/src/testing/testing.go
-@@ -1260,10 +1260,14 @@ func (t *T) Parallel() {
- 		t.chatty.Updatef(t.name, "=== PAUSE %s\n", t.name)
+@@ -1380,10 +1380,14 @@ func (t *T) Parallel() {
  	}
+ 	running.Delete(t.name)
 
 +	encorePauseTest(t)
 +
@@ -24,7 +24,7 @@ index df4dfe4490..10052e09b6 100644
  	if t.chatty != nil {
  		t.chatty.Updatef(t.name, "=== CONT  %s\n", t.name)
  	}
-@@ -1298,12 +1302,14 @@ var errNilPanicOrGoexit = errors.New("test executed panic(nil) or runtime.Goexit
+@@ -1432,12 +1436,14 @@ var errNilPanicOrGoexit = errors.New("test executed panic(nil) or runtime.Goexit
 
  func tRunner(t *T, fn func(t *T)) {
  	t.runner = callerName(0)
@@ -37,5 +37,5 @@ index df4dfe4490..10052e09b6 100644
  	defer func() {
 +		encoreEndTest(t)
  		if t.Failed() {
- 			atomic.AddUint32(&numFailed, 1)
+ 			numFailed.Add(1)
  		}

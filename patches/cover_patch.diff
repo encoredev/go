@@ -20,14 +20,21 @@ index 59ea1ef544..d603a29939 100644
  		}
  		// For a package that is "local" (imported via ./ import or command line, outside GOPATH),
 diff --git a/src/cmd/go/internal/work/exec.go b/src/cmd/go/internal/work/exec.go
-index 5a225fb9f1..aed7983257 100644
+index 9c8b14df00..3589919249 100644
 --- a/src/cmd/go/internal/work/exec.go
 +++ b/src/cmd/go/internal/work/exec.go
-@@ -626,6 +626,7 @@ OverlayLoop:
- 				// Not covering this file.
- 				continue
+@@ -642,12 +642,13 @@ OverlayLoop:
+ 				key = file
  			}
+ 			coverFile = strings.TrimSuffix(coverFile, ".go") + ".cover.go"
 +			sourceFile, _ = fsys.OverlayPath(sourceFile)
- 			if err := b.cover(a, coverFile, sourceFile, cover.Var); err != nil {
- 				return err
- 			}
+ 			if cfg.Experiment.CoverageRedesign {
+ 				infiles = append(infiles, sourceFile)
+ 				outfiles = append(outfiles, coverFile)
+ 			} else {
+ 				cover := p.Internal.CoverVars[key]
+-				if cover == nil {
++				if cover == nil || base.IsTestFile(file) {
+ 					continue // Not covering this file.
+ 				}
+ 				if err := b.cover(a, coverFile, sourceFile, cover.Var); err != nil {
