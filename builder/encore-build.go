@@ -48,7 +48,7 @@ func (b *Builder) CopyOutput() error {
 	key := b.GOOS + "_" + b.GOARCH
 	filesToCopy := []string{
 		join("pkg", "include"),
-		join("pkg", key),
+		join("pkg", "tool", key),
 		"lib",
 		"src",
 		"LICENSE",
