@@ -5,23 +5,23 @@ This patch modifies the Go runtime to add Encore specific tracking data to the G
 the and finish of a Go Routine executed due to a request made to your Encore app.
 
 diff --git a/src/runtime/proc.go b/src/runtime/proc.go
-index 3991a48b10..34daedcae0 100644
+index aba2e2b27b..588a98ff74 100644
 --- a/src/runtime/proc.go
 +++ b/src/runtime/proc.go
-@@ -3473,6 +3473,11 @@ func goexit0(gp *g) {
- 	_g_ := getg()
- 	_p_ := _g_.m.p.ptr()
- 
+@@ -3617,6 +3617,11 @@ func goexit0(gp *g) {
+ 	mp := getg().m
+ 	pp := mp.p.ptr()
+
 +	if e := gp.encore; e != nil {
 +		exitEncoreG(e)
 +		gp.encore = nil
 +	}
 +
  	casgstatus(gp, _Grunning, _Gdead)
- 	gcController.addScannableStack(_p_, -int64(gp.stack.hi-gp.stack.lo))
+ 	gcController.addScannableStack(pp, -int64(gp.stack.hi-gp.stack.lo))
  	if isSystemGoroutine(gp, false) {
-@@ -4143,6 +4148,11 @@ func newproc1(fn *funcval, callergp *g, callerpc uintptr) *g {
- 	gostartcallfn(&newg.sched, fn)
+@@ -4286,6 +4291,11 @@ func newproc1(fn *funcval, callergp *g, callerpc uintptr) *g {
+ 	newg.parentGoid = callergp.goid
  	newg.gopc = callerpc
  	newg.ancestors = saveAncestors(callergp)
 +
@@ -31,16 +31,16 @@ index 3991a48b10..34daedcae0 100644
 +
  	newg.startpc = fn.fn
  	if isSystemGoroutine(newg, false) {
- 		atomic.Xadd(&sched.ngsys, +1)
+ 		sched.ngsys.Add(1)
 
 diff --git a/src/runtime/runtime2.go b/src/runtime/runtime2.go
-index e1788223e7..93abd66585 100644
+index 044a9a715f..5287aa15b3 100644
 --- a/src/runtime/runtime2.go
 +++ b/src/runtime/runtime2.go
-@@ -488,6 +488,7 @@ type g struct {
+@@ -489,6 +489,7 @@ type g struct {
  	labels         unsafe.Pointer // profiler labels
  	timer          *timer         // cached timer for time.Sleep
- 	selectDone     uint32         // are we participating in a select and did someone win the race?
+ 	selectDone     atomic.Uint32  // are we participating in a select and did someone win the race?
 +	encore         unsafe.Pointer // encore-specific goroutine data
  
  	// goroutineProfiled indicates the status of this goroutine's stack for the
