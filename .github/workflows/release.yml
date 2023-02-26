@@ -22,10 +22,10 @@ jobs:
           - builder: macos-latest
             goos: darwin
             goarch: amd64
-          - builder: ubuntu-latest
+          - builder: ubuntu-20.04
             goos: linux
             goarch: amd64
-          - builder: ubuntu-latest
+          - builder: ubuntu-20.04
             goos: linux
             goarch: arm64
           - builder: windows-latest
@@ -69,7 +69,7 @@ jobs:
           name: ${{ steps.encore_go_version.outputs.version }}-${{ matrix.goos }}_${{ matrix.goarch }}
           path: ${{ steps.encore_go_version.outputs.version }}-${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
   release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     needs: build
     steps:
       - name: 'Download artifacts from build steps'
