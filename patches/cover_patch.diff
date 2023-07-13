@@ -21,10 +21,10 @@ index 7c0c104883..3cf8bb1fd3 100644
  		// For a package that is "local" (imported via ./ import or command line, outside GOPATH),
 
 diff --git a/src/cmd/go/internal/work/exec.go b/src/cmd/go/internal/work/exec.go
-index 9c8b14df00..1ebee98a2a 100644
+index 9cf3362fbf..01c17cb059 100644
 --- a/src/cmd/go/internal/work/exec.go
 +++ b/src/cmd/go/internal/work/exec.go
-@@ -623,7 +623,7 @@ OverlayLoop:
+@@ -627,7 +627,7 @@ OverlayLoop:
  		outfiles := []string{}
  		infiles := []string{}
  		for i, file := range str.StringList(gofiles, cgofiles) {
@@ -33,18 +33,11 @@ index 9c8b14df00..1ebee98a2a 100644
  				continue // Not covering this file.
  			}
 
-@@ -642,12 +642,13 @@ OverlayLoop:
- 				key = file
- 			}
- 			coverFile = strings.TrimSuffix(coverFile, ".go") + ".cover.go"
-+			sourceFile, _ = fsys.OverlayPath(sourceFile)
- 			if cfg.Experiment.CoverageRedesign {
+@@ -650,6 +650,7 @@ OverlayLoop:
  				infiles = append(infiles, sourceFile)
  				outfiles = append(outfiles, coverFile)
  			} else {
++				sourceFile, _ = fsys.OverlayPath(sourceFile)
  				cover := p.Internal.CoverVars[key]
--				if cover == nil {
-+				if cover == nil || base.IsTestFile(file) {
+ 				if cover == nil {
  					continue // Not covering this file.
- 				}
- 				if err := b.cover(a, coverFile, sourceFile, cover.Var); err != nil {
