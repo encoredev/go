@@ -33,11 +33,17 @@ import (
 func copyCoverageProfile(from io.Reader, to io.Writer) (err error) {
 	encoreOnce.Do(func() { err = initEncoreReverseMap() })
 	if err != nil {
+		println("encore: error initializing overlay reverse map: " + err.Error())
+		return err
+	}
+
+	b, err := io.ReadAll(from)
+	if err != nil {
 		return err
 	}
 
 	// Read the coverage profile line by line.
-	scanner := bufio.NewScanner(from)
+	scanner := bufio.NewScanner(bytes.NewReader(b))
 	for scanner.Scan() {
 		line := scanner.Text() + "\n"
 
@@ -133,7 +139,10 @@ func initEncoreReverseMap() error {
 			if err != nil {
 				return fmt.Errorf("decoding go list json: %v", err)
 			}
-			pkgs[pkg.Dir] = &pkg
+
+			if pkg.Error == nil && pkg.ImportPath != "" && pkg.Dir != "" {
+				pkgs[pkg.Dir] = &pkg
+			}
 		}
 	}
 
@@ -144,7 +153,8 @@ func initEncoreReverseMap() error {
 		basePath = canonicalize(basePath)
 		pkg, found := pkgs[filepath.Dir(basePath)]
 		if !found {
-			return fmt.Errorf("cannot find package for %s", basePath)
+			// Some of Encore's internals are not in the go list, so we ignore them
+			continue
 		}
 
 		// If the original file and overlay file are reported with different filenames
