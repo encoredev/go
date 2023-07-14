@@ -21,7 +21,7 @@ index 7c0c104883..3cf8bb1fd3 100644
  		// For a package that is "local" (imported via ./ import or command line, outside GOPATH),
 
 diff --git a/src/cmd/go/internal/work/exec.go b/src/cmd/go/internal/work/exec.go
-index 9cf3362fbf..01c17cb059 100644
+index 9cf3362fbf..d309ac021c 100644
 --- a/src/cmd/go/internal/work/exec.go
 +++ b/src/cmd/go/internal/work/exec.go
 @@ -627,7 +627,7 @@ OverlayLoop:
@@ -33,11 +33,25 @@ index 9cf3362fbf..01c17cb059 100644
  				continue // Not covering this file.
  			}
 
-@@ -650,6 +650,7 @@ OverlayLoop:
+@@ -646,6 +646,7 @@ OverlayLoop:
+ 				key = file
+ 			}
+ 			coverFile = strings.TrimSuffix(coverFile, ".go") + ".cover.go"
++			sourceFile, _ = fsys.OverlayPath(sourceFile)
+ 			if cfg.Experiment.CoverageRedesign {
  				infiles = append(infiles, sourceFile)
  				outfiles = append(outfiles, coverFile)
- 			} else {
-+				sourceFile, _ = fsys.OverlayPath(sourceFile)
- 				cover := p.Internal.CoverVars[key]
- 				if cover == nil {
- 					continue // Not covering this file.
+
+diff --git a/src/cmd/go/internal/test/cover.go b/src/cmd/go/internal/test/cover.go
+index f614458dc4..cc449e41c3 100644
+--- a/src/cmd/go/internal/test/cover.go
++++ b/src/cmd/go/internal/test/cover.go
+@@ -69,7 +69,7 @@ func mergeCoverProfile(ew io.Writer, file string) {
+ 		fmt.Fprintf(ew, "error: test wrote malformed coverage profile %s.\n", file)
+ 		return
+ 	}
+-	_, err = io.Copy(coverMerge.f, r)
++	err = copyCoverageProfile(r, coverMerge.f)
+ 	if err != nil {
+ 		fmt.Fprintf(ew, "error: saving coverage profile: %v\n", err)
+ 	}
