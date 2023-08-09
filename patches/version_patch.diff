@@ -10,24 +10,24 @@ to:
     `go version encore-go1.17.6 darwin/arm64`
 
 diff --git a/src/cmd/dist/build.go b/src/cmd/dist/build.go
-index c36a12e5e9..ee9910401c 100644
+index 8973a87168..1fb996de60 100644
 --- a/src/cmd/dist/build.go
 +++ b/src/cmd/dist/build.go
-@@ -362,7 +362,7 @@ func findgoversion() string {
- 					b = "builder " + hostType
- 				}
- 			}
+@@ -393,7 +393,7 @@ func findgoversion() string {
+ 		// its content if available, which is empty at this point.
+ 		// Only use the VERSION file if it is non-empty.
+ 		if b != "" {
 -			return b
 +			return strings.Replace(b, "go1.", "encore-go1.", 1)
  		}
  	}
 
-@@ -393,7 +393,7 @@ func findgoversion() string {
+@@ -424,7 +424,7 @@ func findgoversion() string {
  	if m == nil {
  		fatalf("internal/goversion/goversion.go does not contain 'const Version = ...'")
  	}
 -	version := fmt.Sprintf("devel go1.%s-", m[1])
-+   version := fmt.Sprintf("devel encore-go1.%s-", m[1])
++	version := fmt.Sprintf("devel encore-go1.%s-", m[1])
  	version += chomp(run(goroot, CheckExit, "git", "log", "-n", "1", "--format=format:%h %cd", "HEAD"))
 
  	// Cache version.
