@@ -34,14 +34,15 @@ index aba2e2b27b..588a98ff74 100644
  		sched.ngsys.Add(1)
 
 diff --git a/src/runtime/runtime2.go b/src/runtime/runtime2.go
-index 044a9a715f..5287aa15b3 100644
+index f4c76abd1c..190381b454 100644
 --- a/src/runtime/runtime2.go
 +++ b/src/runtime/runtime2.go
-@@ -489,6 +489,7 @@ type g struct {
- 	labels         unsafe.Pointer // profiler labels
- 	timer          *timer         // cached timer for time.Sleep
- 	selectDone     atomic.Uint32  // are we participating in a select and did someone win the race?
-+	encore         unsafe.Pointer // encore-specific goroutine data
- 
+@@ -493,6 +493,8 @@ type g struct {
+ 	timer         *timer         // cached timer for time.Sleep
+ 	selectDone    atomic.Uint32  // are we participating in a select and did someone win the race?
+
++	encore unsafe.Pointer // encore-specific goroutine data
++
  	// goroutineProfiled indicates the status of this goroutine's stack for the
  	// current in-progress goroutine profile
+ 	goroutineProfiled goroutineProfileStateHolder
