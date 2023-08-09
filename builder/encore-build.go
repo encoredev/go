@@ -52,6 +52,7 @@ func (b *Builder) CopyOutput() error {
 		"lib",
 		"src",
 		"LICENSE",
+		"go.env",
 	}
 
 	// Cross-compilation puts binaries under bin/goos_goarch instead.
