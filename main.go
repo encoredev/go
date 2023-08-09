@@ -63,6 +63,11 @@ func readBuiltVersion() {
 		log.Fatalf("Unable to extract version, read: %s", str)
 	}
 
+	// In Go 1.21 the time was added as the second line of the VERSION file
+	// so we only want the first line
+	version, _, _ = strings.Cut(version, "\n")
+	version = strings.TrimSpace(version)
+
 	fmt.Println(version)
 }
 
