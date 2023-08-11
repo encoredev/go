@@ -41,8 +41,14 @@ func (b *Builder) Build() error {
 		"GOROOT_FINAL=/encore",
 		"GOARCH="+b.GOARCH,
 		"GOOS="+b.GOOS,
-		"GOEXPERIMENT=cacheprog",
 	)
+
+	// Enable cacheprog experiment on all platforms except Windows;
+	// it's seemingly not supported there: we get weird build errors.
+	if b.GOOS != "windows" {
+		cmd.Env = append(cmd.Env, "GOEXPERIMENT=cacheprog")
+	}
+
 	return cmd.Run()
 }
 
