@@ -43,17 +43,25 @@ jobs:
           submodules: true # Checkout the Go submodule
 
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
           go-version: '1.20'
 
       - name: 'Create patched runtime'
         run: bash ./apply_patch.bash "${{ github.event.inputs.version }}"
 
+      - name: Set GOROOT_BOOTSTRAP
+        id: set_bootstrap
+        if: matrix.goos == 'windows'
+        run: |
+          echo "GOROOT_BOOTSTRAP=$(go env GOROOT)" >> "$env:GITHUB_ENV"
+          echo "GOROOT_BOOTSTRAP=$(go env GOROOT)" >> "$env:GITHUB_OUTPUT"
+
       - name: Build
         run: go run . -dst=dist -goos=${{ matrix.goos }} -goarch=${{ matrix.goarch }}
         env:
           GO111MODULE: "on"
+          GOROOT_BOOTSTRAP: ${{ steps.set_bootstrap.outputs.GOROOT_BOOTSTRAP }}"
 
       # This step gets the exact version of Go we're releasing (including minor), so if we give the input as `1.17` this might return `encore-go1.17.5`.
       - name: 'Read the version of Go we built'
