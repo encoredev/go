@@ -40,7 +40,9 @@ func (b *Builder) Build() error {
 	cmd.Env = append(os.Environ(),
 		"GOROOT_FINAL=/encore",
 		"GOARCH="+b.GOARCH,
-		"GOOS="+b.GOOS)
+		"GOOS="+b.GOOS,
+		"GOEXPERIMENT=cacheprog",
+	)
 	return cmd.Run()
 }
 
