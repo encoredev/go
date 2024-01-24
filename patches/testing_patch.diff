@@ -6,10 +6,23 @@ test runs against global state. This patch introduces a per test level callback 
 test and not have state between tests interfere with each other.
 
 diff --git a/src/testing/testing.go b/src/testing/testing.go
-index fc34cbf28b..37f54b482b 100644
+index fcf7048f23..ec628da6ed 100644
 --- a/src/testing/testing.go
 +++ b/src/testing/testing.go
-@@ -1380,10 +1380,14 @@ func (t *T) Parallel() {
+@@ -765,6 +765,12 @@ func (c *common) frameSkip(skip int) runtime.Frame {
+ // and inserts the final newline if needed and indentation spaces for formatting.
+ // This function must be called with c.mu held.
+ func (c *common) decorate(s string, skip int) string {
++	// allow encore to capture the log as well;
++	// we do it here so that all the branches which result in a log message
++	// during tests get captured, however we do it _before_ the liens get modified
++	// and indented.
++	encoreTestLog(s, skip+1)
++
+ 	frame := c.frameSkip(skip)
+ 	file := frame.File
+ 	line := frame.Line
+@@ -1399,10 +1405,14 @@ func (t *T) Parallel() {
  	}
  	running.Delete(t.name)
 
@@ -24,11 +37,11 @@ index fc34cbf28b..37f54b482b 100644
  	if t.chatty != nil {
  		t.chatty.Updatef(t.name, "=== CONT  %s\n", t.name)
  	}
-@@ -1432,12 +1436,14 @@ var errNilPanicOrGoexit = errors.New("test executed panic(nil) or runtime.Goexit
+@@ -1451,12 +1461,14 @@ var errNilPanicOrGoexit = errors.New("test executed panic(nil) or runtime.Goexit
 
  func tRunner(t *T, fn func(t *T)) {
  	t.runner = callerName(0)
-+	encoreStartTest(t)
++	encoreStartTest(t, fn)
 
  	// When this goroutine is done, either because fn(t)
  	// returned normally or because a test failure triggered
