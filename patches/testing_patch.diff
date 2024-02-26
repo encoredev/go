@@ -6,10 +6,10 @@ test runs against global state. This patch introduces a per test level callback 
 test and not have state between tests interfere with each other.
 
 diff --git a/src/testing/testing.go b/src/testing/testing.go
-index fcf7048f23..ec628da6ed 100644
+index 5c06aea5f8..0db6bb40ab 100644
 --- a/src/testing/testing.go
 +++ b/src/testing/testing.go
-@@ -765,6 +765,12 @@ func (c *common) frameSkip(skip int) runtime.Frame {
+@@ -767,6 +767,12 @@ func (c *common) frameSkip(skip int) runtime.Frame {
  // and inserts the final newline if needed and indentation spaces for formatting.
  // This function must be called with c.mu held.
  func (c *common) decorate(s string, skip int) string {
@@ -22,7 +22,7 @@ index fcf7048f23..ec628da6ed 100644
  	frame := c.frameSkip(skip)
  	file := frame.File
  	line := frame.Line
-@@ -1399,10 +1405,14 @@ func (t *T) Parallel() {
+@@ -1479,10 +1485,14 @@ func (t *T) Parallel() {
  	}
  	running.Delete(t.name)
 
@@ -37,7 +37,7 @@ index fcf7048f23..ec628da6ed 100644
  	if t.chatty != nil {
  		t.chatty.Updatef(t.name, "=== CONT  %s\n", t.name)
  	}
-@@ -1451,12 +1461,14 @@ var errNilPanicOrGoexit = errors.New("test executed panic(nil) or runtime.Goexit
+@@ -1538,6 +1548,7 @@ var errNilPanicOrGoexit = errors.New("test executed panic(nil) or runtime.Goexit
 
  func tRunner(t *T, fn func(t *T)) {
  	t.runner = callerName(0)
@@ -45,10 +45,11 @@ index fcf7048f23..ec628da6ed 100644
 
  	// When this goroutine is done, either because fn(t)
  	// returned normally or because a test failure triggered
- 	// a call to runtime.Goexit, record the duration and send
+@@ -1545,6 +1556,7 @@ func tRunner(t *T, fn func(t *T)) {
  	// a signal saying that the test is done.
  	defer func() {
+ 		t.checkRaces()
 +		encoreEndTest(t)
+
+ 		// TODO(#61034): This is the wrong place for this check.
  		if t.Failed() {
- 			numFailed.Add(1)
- 		}

@@ -34,12 +34,12 @@ index aba2e2b27b..588a98ff74 100644
  		sched.ngsys.Add(1)
 
 diff --git a/src/runtime/runtime2.go b/src/runtime/runtime2.go
-index f4c76abd1c..190381b454 100644
+index 63320d4a8a..f3be797f7d 100644
 --- a/src/runtime/runtime2.go
 +++ b/src/runtime/runtime2.go
-@@ -493,6 +493,8 @@ type g struct {
- 	timer         *timer         // cached timer for time.Sleep
- 	selectDone    atomic.Uint32  // are we participating in a select and did someone win the race?
+@@ -510,6 +510,8 @@ type g struct {
+
+ 	coroarg *coro // argument during coroutine transfers
 
 +	encore unsafe.Pointer // encore-specific goroutine data
 +
