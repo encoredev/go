@@ -34,15 +34,15 @@ index aba2e2b27b..588a98ff74 100644
  		sched.ngsys.Add(1)
 
 diff --git a/src/runtime/runtime2.go b/src/runtime/runtime2.go
-index 63320d4a8a..f3be797f7d 100644
+index 4a78963961..87932dfd73 100644
 --- a/src/runtime/runtime2.go
 +++ b/src/runtime/runtime2.go
-@@ -510,6 +510,8 @@ type g struct {
-
+@@ -516,6 +516,8 @@ type g struct {
+ 
  	coroarg *coro // argument during coroutine transfers
-
+ 
 +	encore unsafe.Pointer // encore-specific goroutine data
 +
- 	// goroutineProfiled indicates the status of this goroutine's stack for the
- 	// current in-progress goroutine profile
- 	goroutineProfiled goroutineProfileStateHolder
+ 	// Per-G tracer state.
+ 	trace gTraceState
+ 
