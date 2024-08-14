@@ -6,14 +6,14 @@ This patch modifies the standard libraries roundTrip function on the HTTP interf
 instrument the call.
 
 diff --git a/src/net/http/transport.go b/src/net/http/transport.go
-index 7561f7f5cb..302425e3b4 100644
+index da9163a27a..b2200d5952 100644
 --- a/src/net/http/transport.go
 +++ b/src/net/http/transport.go
-@@ -510,9 +510,17 @@ func (t *Transport) alternateRoundTripper(req *Request) RoundTripper {
+@@ -527,9 +527,17 @@ func validateHeaders(hdrs Header) string {
  }
 
  // roundTrip implements a RoundTripper over HTTP.
--func (t *Transport) roundTrip(req *Request) (*Response, error) {
+-func (t *Transport) roundTrip(req *Request) (_ *Response, err error) {
 +func (t *Transport) roundTrip(req *Request) (rr *Response, err error) {
  	t.nextProtoOnce.Do(t.onceSetNextProtoDefaults)
 -	ctx := req.Context()

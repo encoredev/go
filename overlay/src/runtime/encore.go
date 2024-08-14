@@ -21,3 +21,9 @@ func encoreCallers(skip int, pc []uintptr) (n int, off uintptr) {
 	n = Callers(skip+1, pc)
 	return n, firstmoduledata.text
 }
+
+// To allow Encore to use go:linkname:
+
+//go:linkname getEncoreG
+//go:linkname setEncoreG
+//go:linkname encoreCallers
