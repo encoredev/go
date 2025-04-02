@@ -37,7 +37,7 @@ index 9cf3362fbf..d309ac021c 100644
  				key = file
  			}
  			coverFile = strings.TrimSuffix(coverFile, ".go") + ".cover.go"
-+			sourceFile, _ = fsys.OverlayPath(sourceFile)
++			sourceFile = fsys.Actual(sourceFile)
  			if cfg.Experiment.CoverageRedesign {
  				infiles = append(infiles, sourceFile)
  				outfiles = append(outfiles, coverFile)

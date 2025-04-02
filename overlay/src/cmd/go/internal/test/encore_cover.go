@@ -16,6 +16,14 @@ import (
 	"sync"
 )
 
+// overlayJSON is the format for the -overlay file.
+type overlayJSON struct {
+	// Replace maps file names observed by Go tools
+	// to the actual files that should be used when those are read.
+	// If the actual name is "", the file should appear to be deleted.
+	Replace map[string]string
+}
+
 // copyCoverageProfile copies the coverage profile report into
 // the output file while restoring the original filenames from
 // any overlays that where applied by Encore.
@@ -80,7 +88,7 @@ var (
 //  3. Building a map of "[pkg]/[overlay_file].go" -> "[pkg]/[original_file].go"
 func initEncoreReverseMap() error {
 	// 1) First read the overlay file
-	var overlayJSON fsys.OverlayJSON
+	var overlayJSON overlayJSON
 	{ // This block is mostly copied from: cmd/go/internal/fsys/fsys.go Init
 
 		// Read the overlay file
