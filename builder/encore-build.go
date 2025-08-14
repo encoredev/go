@@ -79,8 +79,8 @@ func (b *Builder) CopyOutput() error {
 	}
 
 	filesToCopy = append(filesToCopy, all(join("pkg", "tool", key),
-		"addr2line"+exe, "asm"+exe, "buildid"+exe, "cgo"+exe, "compile"+exe,
-		"link"+exe, "pack"+exe, "test2json"+exe, "vet"+exe, "cover"+exe,
+		"asm"+exe, "cgo"+exe, "compile"+exe,
+		"link"+exe, "vet"+exe, "cover"+exe,
 	)...)
 
 	for _, c := range filesToCopy {
