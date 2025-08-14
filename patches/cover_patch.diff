@@ -6,25 +6,24 @@ Since Encore's code generation adds some extra files, this doesn't quite work.
 This patch fixes this by skipping over these files, and reading the source file
 using the overlay file system instead of directly from disk.
 
-diff --git a/src/cmd/go/internal/load/pkg.go b/src/cmd/go/internal/load/pkg.go
-index 7c0c104883..3cf8bb1fd3 100644
---- a/src/cmd/go/internal/load/pkg.go
-+++ b/src/cmd/go/internal/load/pkg.go
-@@ -3438,7 +3438,7 @@ func DeclareCoverVars(p *Package, files ...string) map[string]*CoverVar {
- 	sum := sha256.Sum256([]byte(p.ImportPath))
- 	h := fmt.Sprintf("%x", sum[:6])
- 	for _, file := range files {
--		if base.IsTestFile(file) {
-+		if base.IsTestFile(file) || strings.Contains(file, "encore_internal__") {
- 			continue
- 		}
- 		// For a package that is "local" (imported via ./ import or command line, outside GOPATH),
-
+diff --git a/src/cmd/go/internal/test/cover.go b/src/cmd/go/internal/test/cover.go
+index e295c2d90f..599a88731e 100644
+--- a/src/cmd/go/internal/test/cover.go
++++ b/src/cmd/go/internal/test/cover.go
+@@ -69,7 +69,7 @@ func mergeCoverProfile(file string) {
+ 		base.Errorf("test wrote malformed coverage profile %s: header %q, expected %q: %v", file, string(buf), expect, err)
+ 		return
+ 	}
+-	_, err = io.Copy(coverMerge.f, r)
++	err = copyCoverageProfile(r, coverMerge.f)
+ 	if err != nil {
+ 		base.Errorf("saving coverage profile: %v", err)
+ 		return
 diff --git a/src/cmd/go/internal/work/exec.go b/src/cmd/go/internal/work/exec.go
-index 9cf3362fbf..d309ac021c 100644
+index 63fd13f754..eeb79cd7f5 100644
 --- a/src/cmd/go/internal/work/exec.go
 +++ b/src/cmd/go/internal/work/exec.go
-@@ -627,7 +627,7 @@ OverlayLoop:
+@@ -647,7 +647,7 @@ OverlayLoop:
  		outfiles := []string{}
  		infiles := []string{}
  		for i, file := range str.StringList(gofiles, cgofiles) {
@@ -32,26 +31,12 @@ index 9cf3362fbf..d309ac021c 100644
 +			if base.IsTestFile(file) || strings.Contains(file, "encore_internal__") {
  				continue // Not covering this file.
  			}
-
-@@ -646,6 +646,7 @@ OverlayLoop:
- 				key = file
+ 
+@@ -663,6 +663,7 @@ OverlayLoop:
+ 				coverFile = objdir + file
  			}
  			coverFile = strings.TrimSuffix(coverFile, ".go") + ".cover.go"
 +			sourceFile = fsys.Actual(sourceFile)
- 			if cfg.Experiment.CoverageRedesign {
- 				infiles = append(infiles, sourceFile)
- 				outfiles = append(outfiles, coverFile)
-
-diff --git a/src/cmd/go/internal/test/cover.go b/src/cmd/go/internal/test/cover.go
-index f614458dc4..cc449e41c3 100644
---- a/src/cmd/go/internal/test/cover.go
-+++ b/src/cmd/go/internal/test/cover.go
-@@ -69,7 +69,7 @@ func mergeCoverProfile(ew io.Writer, file string) {
- 		fmt.Fprintf(ew, "error: test wrote malformed coverage profile %s.\n", file)
- 		return
- 	}
--	_, err = io.Copy(coverMerge.f, r)
-+	err = copyCoverageProfile(r, coverMerge.f)
- 	if err != nil {
- 		fmt.Fprintf(ew, "error: saving coverage profile: %v\n", err)
- 	}
+ 			infiles = append(infiles, sourceFile)
+ 			outfiles = append(outfiles, coverFile)
+ 			if i < len(gofiles) {
