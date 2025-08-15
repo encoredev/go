@@ -1,11 +1,18 @@
 package builder
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
+	"strings"
+
+	"cloud.google.com/go/storage"
+	"google.golang.org/api/option"
 )
 
 type Builder struct {
@@ -118,6 +125,54 @@ func (b *Builder) CleanOutput() error {
 	return nil
 }
 
+func (b *Builder) Upload() error {
+	ctx := context.Background()
+	creds := os.Getenv("ENCORE_RELEASER_GCS_KEY")
+	client, err := storage.NewClient(ctx, option.WithCredentialsJSON([]byte(creds)))
+	if err != nil {
+		return err
+	}
+
+	// Tar the artifacts.
+	goVersion, err := readBuiltVersion()
+	if err != nil {
+		return fmt.Errorf("unable to read built version: %v", err)
+	}
+
+	// Create a tar.gz file.
+	fmt.Println("Creating tar.gz file...")
+	filename := fmt.Sprintf("%s-%s_%s.tar.gz", goVersion, b.GOOS, b.GOARCH)
+	srcDir := filepath.Join(b.dst, b.GOOS+"_"+b.GOARCH)
+	cmd := exec.Command("tar", "-czvf", filename, "-C", srcDir, ".")
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("tar: %v", err)
+	}
+
+	objectPath := fmt.Sprintf("encore-go/%s/%s-%s.tar.gz", goVersion, b.GOOS, b.GOARCH)
+	obj := client.Bucket("encore-releaser").Object(objectPath)
+
+	{
+		input, err := os.Open(filename)
+		if err != nil {
+			return fmt.Errorf("unable to open file: %v", err)
+		}
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		w := obj.NewWriter(ctx)
+		if _, err := io.Copy(w, input); err != nil {
+			return fmt.Errorf("unable to copy file: %v", err)
+		}
+		if err := w.Close(); err != nil {
+			return fmt.Errorf("unable to complete upload: %v", err)
+		}
+	}
+
+	return nil
+}
+
 func join(strs ...string) string {
 	return filepath.Join(strs...)
 }
@@ -130,7 +185,7 @@ func all(src string, all ...string) []string {
 	return res
 }
 
-func BuildEncoreGo(goos, goarch, root, dst string) error {
+func BuildEncoreGo(goos, goarch, root, dst string, upload bool) error {
 	if _, err := os.Stat(filepath.Join(root, "go", "src", "make.bash")); err != nil {
 		return fmt.Errorf("unexpected location for build script, expected in encore-go root")
 	}
@@ -167,8 +222,64 @@ func BuildEncoreGo(goos, goarch, root, dst string) error {
 		}
 	}
 
+	if upload {
+		if err := b.Upload(); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
 // exe suffix
 var exe string
+
+func readBuiltVersion() (version string, err error) {
+	var str string
+	if isfile("go/VERSION") {
+		// If we're building from a release branch, we use this as the base
+		str, err = readfile("go/VERSION")
+		if err != nil {
+			return "", fmt.Errorf("unable to read file: %w", err)
+		}
+		// Then we repeat the replace we do within the src/cmd/dist/build.go
+		str = strings.Replace(str, "go1.", "encore-go1.", 1)
+	} else {
+		// Otherwise we read the cache file which would be created by the build process
+		// if there was no VERSION file present
+		str, err = readfile("go/VERSION.cache")
+		if err != nil {
+			return "", fmt.Errorf("unable to read file: %w", err)
+		}
+	}
+
+	// With our patches there must always be an `encore-go1.xx` version in this string
+	// (there may be other bits, like "devel" or "beta" which we don't care about)
+	re, err := regexp.Compile("(encore-go[^ ]+)")
+	if err != nil {
+		return "", fmt.Errorf("unable to compile regex: %w", err)
+	}
+	version = re.FindString(str)
+	if version == "" {
+		return "", fmt.Errorf("unable to extract version, read: %s", version)
+	}
+
+	// In Go 1.21 the time was added as the second line of the VERSION file
+	// so we only want the first line
+	version, _, _ = strings.Cut(version, "\n")
+	version = strings.TrimSpace(version)
+
+	return version, nil
+}
+
+// isfile reports whether p names an existing file.
+func isfile(p string) bool {
+	fi, err := os.Stat(p)
+	return err == nil && fi.Mode().IsRegular()
+}
+
+// readfile returns the content of the named file.
+func readfile(file string) (string, error) {
+	data, err := os.ReadFile(file)
+	return strings.TrimRight(string(data), " \t\r\n"), err
+}
