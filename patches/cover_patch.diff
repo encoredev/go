@@ -20,23 +20,23 @@ index e295c2d90f..599a88731e 100644
  		base.Errorf("saving coverage profile: %v", err)
  		return
 diff --git a/src/cmd/go/internal/work/exec.go b/src/cmd/go/internal/work/exec.go
-index 63fd13f754..eeb79cd7f5 100644
+index 8e30276671..760c057b67 100644
 --- a/src/cmd/go/internal/work/exec.go
 +++ b/src/cmd/go/internal/work/exec.go
-@@ -647,7 +647,7 @@ OverlayLoop:
- 		outfiles := []string{}
- 		infiles := []string{}
- 		for i, file := range str.StringList(gofiles, cgofiles) {
--			if base.IsTestFile(file) {
-+			if base.IsTestFile(file) || strings.Contains(file, "encore_internal__") {
- 				continue // Not covering this file.
- 			}
+@@ -664,7 +664,7 @@ func (b *Builder) runCover(a, buildAction *Action, objdir string, gofiles, cgofi
+ 	outfiles := []string{}
+ 	infiles := []string{}
+ 	for i, file := range str.StringList(gofiles, cgofiles) {
+-		if base.IsTestFile(file) {
++		if base.IsTestFile(file) || strings.Contains(file, "encore_internal__") {
+ 			continue // Not covering this file.
+ 		}
  
-@@ -663,6 +663,7 @@ OverlayLoop:
- 				coverFile = objdir + file
- 			}
- 			coverFile = strings.TrimSuffix(coverFile, ".go") + ".cover.go"
-+			sourceFile = fsys.Actual(sourceFile)
- 			infiles = append(infiles, sourceFile)
- 			outfiles = append(outfiles, coverFile)
- 			if i < len(gofiles) {
+@@ -680,6 +680,7 @@ func (b *Builder) runCover(a, buildAction *Action, objdir string, gofiles, cgofi
+ 			coverFile = objdir + file
+ 		}
+ 		coverFile = strings.TrimSuffix(coverFile, ".go") + ".cover.go"
++		sourceFile = fsys.Actual(sourceFile)
+ 		infiles = append(infiles, sourceFile)
+ 		outfiles = append(outfiles, coverFile)
+ 		if i < len(gofiles) {
