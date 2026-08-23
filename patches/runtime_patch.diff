@@ -5,13 +5,13 @@ This patch modifies the Go runtime to add Encore specific tracking data to the G
 the and finish of a Go Routine executed due to a request made to your Encore app.
 
 diff --git a/src/runtime/proc.go b/src/runtime/proc.go
-index aba2e2b27b..588a98ff74 100644
+index 005c875cbf..d4acd8b146 100644
 --- a/src/runtime/proc.go
 +++ b/src/runtime/proc.go
-@@ -3617,6 +3617,11 @@ func goexit0(gp *g) {
+@@ -4504,6 +4504,11 @@ func gdestroy(gp *g) {
  	mp := getg().m
  	pp := mp.p.ptr()
-
+ 
 +	if e := gp.encore; e != nil {
 +		exitEncoreG(e)
 +		gp.encore = nil
@@ -20,29 +20,35 @@ index aba2e2b27b..588a98ff74 100644
  	casgstatus(gp, _Grunning, _Gdead)
  	gcController.addScannableStack(pp, -int64(gp.stack.hi-gp.stack.lo))
  	if isSystemGoroutine(gp, false) {
-@@ -4286,6 +4291,11 @@ func newproc1(fn *funcval, callergp *g, callerpc uintptr) *g {
- 	newg.parentGoid = callergp.goid
- 	newg.gopc = callerpc
- 	newg.ancestors = saveAncestors(callergp)
+@@ -5295,8 +5300,18 @@ func malg(stacksize int32) *g {
+ func newproc(fn *funcval) {
+ 	gp := getg()
+ 	pc := sys.GetCallerPC()
 +
-+	if e := callergp.encore; e != nil {
-+		newg.encore = startEncoreG(e)
++	// Call startEncoreG on the user goroutine stack (not g0) so that
++	// race-instrumented code can safely access g.racectx, which is
++	// zero on the system stack and would crash __tsan_func_enter.
++	var encData unsafe.Pointer
++	if gp.encore != nil {
++		encData = startEncoreG(gp.encore)
 +	}
 +
- 	newg.startpc = fn.fn
- 	if isSystemGoroutine(newg, false) {
- 		sched.ngsys.Add(1)
-
+ 	systemstack(func() {
+ 		newg := newproc1(fn, gp, pc, false, waitReasonZero)
++		newg.encore = encData
+ 
+ 		pp := getg().m.p.ptr()
+ 		runqput(pp, newg, true)
 diff --git a/src/runtime/runtime2.go b/src/runtime/runtime2.go
-index 4a78963961..87932dfd73 100644
+index be33932b24..3908123e8b 100644
 --- a/src/runtime/runtime2.go
 +++ b/src/runtime/runtime2.go
-@@ -516,6 +516,8 @@ type g struct {
- 
+@@ -574,6 +574,8 @@ type g struct {
  	coroarg *coro // argument during coroutine transfers
+ 	bubble  *synctestBubble
  
 +	encore unsafe.Pointer // encore-specific goroutine data
 +
- 	// Per-G tracer state.
- 	trace gTraceState
- 
+ 	// xRegs stores the extended register state if this G has been
+ 	// asynchronously preempted.
+ 	xRegs xRegPerG
